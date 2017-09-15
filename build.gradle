@@ -1,0 +1,29 @@
+group 'org.thepun'
+version '1.0-SNAPSHOT'
+
+apply plugin: 'idea'
+apply plugin: 'java'
+apply plugin: 'maven'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+}
+
+dependencies {
+    compile group: 'org.thepun', name: 'unsafe-utils', version: '1.0-SNAPSHOT'
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}
+
+idea {
+    module {
+        jdkName = '1.8'
+        downloadJavadoc = true
+        downloadSources = true
+        outputDir = file('build/idea')
+        testOutputDir = file('build/idea_test')
+        excludeDirs += file('.idea')
+    }
+}
