@@ -27,4 +27,5 @@ final class TypeContext<T extends RecyclableObject> {
     T tryGetFreeObject() {
         return freeObjects.poll();
     }
+
 }

@@ -11,4 +11,5 @@ public abstract class RecyclableObject {
     public final void recycle() {
         ThreadContext.locate(type).addFreeObject(this);
     }
+
 }

@@ -4,4 +4,5 @@ public interface RecycledFactory<T extends RecyclableObject> {
 
     T createNew(int type);
 
+
 }

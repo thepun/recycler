@@ -65,4 +65,5 @@ public class RecycleAwareThread extends Thread {
     final <T extends RecyclableObject> ThreadContext<T> getContext(int type) {
         return (ThreadContext<T>) contexts[type];
     }
+
 }
