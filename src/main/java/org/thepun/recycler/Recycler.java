@@ -1,30 +1,32 @@
 package org.thepun.recycler;
 
-public final class Recycler<T extends RecyclableObject> {
+import java.lang.reflect.Modifier;
 
-    private final int registeredType;
-
-    public Recycler(Class<T> type, RecyclableObjectFactory<T> factory) {
-        registeredType = registerType(type, factory);
-    }
-
-    public T get() {
-        return get(registeredType);
-    }
-
-    public T create() {
-        return create(registeredType);
-    }
+public final class Recycler {
 
     public static <T  extends RecyclableObject> int registerType(Class<T> type, RecyclableObjectFactory<T> factory) {
-        return  RecycleAwareThread.registerNewType(type, factory).getIndex();
+        if (!Modifier.isFinal(type.getModifiers())) {
+            throw new IllegalArgumentException("Only final classes supported: " + type.getName());
+        }
+
+        if (type.getSuperclass() != RecyclableObject.class) {
+            throw new IllegalArgumentException("Only direct children of RecyclableObject supported: " + type.getName());
+        }
+
+        TypeContext typeContext = TypeContext.registerNewType(factory);
+        RecycleAwareThread.registerNewTypeToAll(typeContext);
+        return typeContext.getIndex();
     }
 
     public static <T extends RecyclableObject> T get(int registeredType) {
-        return ThreadContext.<T>locate(registeredType).get();
+        return (T) RecycleAwareThread.current().getContext(registeredType).get();
     }
 
     public static <T extends RecyclableObject> T create(int registeredType) {
-        return ThreadContext.<T>locate(registeredType).create();
+        return (T) RecycleAwareThread.current().getContext(registeredType).create();
+    }
+
+
+    private Recycler() {
     }
 }

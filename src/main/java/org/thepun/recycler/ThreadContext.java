@@ -1,49 +1,58 @@
 package org.thepun.recycler;
 
-import java.util.LinkedList;
-import java.util.Queue;
+final class ThreadContext {
 
-final class ThreadContext<T extends RecyclableObject> {
-
-    static <T extends RecyclableObject> ThreadContext<T> locate(int type) {
-        return RecycleAwareThread.currentRecycleAwareThread().getContext(type);
-    }
+    private static final int MAX_LOCAL_FREE = 1024;
 
 
-    private final int type;
-    private final Queue<T> freeObjects;
-    private final TypeContext<T> typeContext;
-    private final RecyclableObjectFactory<T> factory;
+    private final int registeredType;
+    private final RecyclableObject[] freeLocal;
+    private final RecyclableObject[] freeOther;
+    private final TypeContext typeContext;
+    private final RecyclableObjectFactory<?> factory;
 
-    ThreadContext(TypeContext<T> typeContext) {
+    private int freeLocalCount;
+    private int freeOtherCount;
+
+    ThreadContext(TypeContext typeContext) {
         this.typeContext = typeContext;
 
-        type = typeContext.getIndex();
+        registeredType = typeContext.getIndex();
         factory = typeContext.getFactory();
 
-        freeObjects = new LinkedList<>();
+        freeLocal = new RecyclableObject[MAX_LOCAL_FREE];
+        freeOther = new RecyclableObject[MAX_LOCAL_FREE];
     }
 
-    T create() {
-        return factory.createNew(type);
+    RecyclableObject create() {
+        return factory.createNew(registeredType);
     }
 
-    T get() {
-        T object = freeObjects.poll();
-
-        if (object == null) {
-            object = typeContext.tryGetFreeObject();
+    RecyclableObject get() {
+        if (freeLocalCount > 0) {
+            int freeIndex = --freeLocalCount;
+            RecyclableObject object = freeLocal[freeIndex];
+            freeLocal[freeIndex] = null;
+            return object;
         }
 
+        RecyclableObject object = typeContext.tryGetFreeGlobalObject();
+
         if (object == null) {
-            object = factory.createNew(type);
+            object = factory.createNew(registeredType);
         }
 
         return object;
     }
 
-    void addFreeObject(T object) {
-        freeObjects.add(object);
+    void addFreeObjectBackToOrigin(RecyclableObject object) {
+
+        //free.add(object);
     }
+
+    void addFreeObjectForLocalUse(RecyclableObject object) {
+        //free.add(object);
+    }
+
 
 }

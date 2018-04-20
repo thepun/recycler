@@ -1,31 +1,61 @@
 package org.thepun.recycler;
 
-import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-final class TypeContext<T extends RecyclableObject> {
+final class TypeContext {
+
+    private static final int MAX_TYPES = 16;
+    private static final TypeContext[] TYPE_CONTEXTS = new TypeContext[MAX_TYPES];
+
+    private static int TYPES = 0;
+
+    static int getMaxPossibleRegisteredType() {
+        return MAX_TYPES;
+    }
+
+    static TypeContext get(int registeredType) {
+        return TYPE_CONTEXTS[registeredType];
+    }
+
+    static TypeContext registerNewType(RecyclableObjectFactory<?> factory) {
+        synchronized (TYPE_CONTEXTS) {
+            int newRegisteredType = TYPES++;
+            if (newRegisteredType >= MAX_TYPES) {
+                throw new IllegalStateException("Maximum amount of recyclable types reached");
+            }
+
+            TypeContext typeContext = new TypeContext(newRegisteredType, factory);
+            TYPE_CONTEXTS[newRegisteredType] = typeContext;
+            return typeContext;
+        }
+    }
+
 
     private final int index;
-    private final Queue<T> freeObjects;
-    private final RecyclableObjectFactory<T> factory;
+    private final RecyclableObjectFactory<?> factory;
+    private final ConcurrentLinkedQueue<? extends RecyclableObject> free;
 
-    TypeContext(int index, RecyclableObjectFactory<T> factory) {
+    private TypeContext(int index, RecyclableObjectFactory<?> factory) {
         this.index = index;
         this.factory = factory;
 
-        freeObjects = new ConcurrentLinkedQueue<>();
+        free = new ConcurrentLinkedQueue<>();
     }
 
     int getIndex() {
         return index;
     }
 
-    RecyclableObjectFactory<T> getFactory() {
+    RecyclableObjectFactory<?> getFactory() {
         return factory;
     }
 
-    T tryGetFreeObject() {
-        return freeObjects.poll();
+    RecyclableObject tryGetFreeGlobalObject() {
+        return free.poll();
+    }
+
+    void addFreeObjectForGlobalUse(RecyclableObject object) {
+        //free.add(object);
     }
 
 }
