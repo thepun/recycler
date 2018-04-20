@@ -2,23 +2,29 @@ package org.thepun.recycler;
 
 public final class Recycler<T extends RecyclableObject> {
 
-    private final int type;
+    private final int registeredType;
 
-    public Recycler(RecycledFactory<T> factory) {
-        TypeContext<T> typeContext = RecycleAwareThread.registerNewType(factory);
-        type = typeContext.getIndex();
-    }
-
-    public T getOrCreate() {
-        return ThreadContext.<T>locate(type).getOrCreate();
-    }
-
-    public T create() {
-        return ThreadContext.<T>locate(type).create();
+    public Recycler(Class<T> type, RecyclableObjectFactory<T> factory) {
+        registeredType = registerType(type, factory);
     }
 
     public T get() {
-        return ThreadContext.<T>locate(type).get();
+        return get(registeredType);
     }
 
+    public T create() {
+        return create(registeredType);
+    }
+
+    public static <T  extends RecyclableObject> int registerType(Class<T> type, RecyclableObjectFactory<T> factory) {
+        return  RecycleAwareThread.registerNewType(type, factory).getIndex();
+    }
+
+    public static <T extends RecyclableObject> T get(int registeredType) {
+        return ThreadContext.<T>locate(registeredType).get();
+    }
+
+    public static <T extends RecyclableObject> T create(int registeredType) {
+        return ThreadContext.<T>locate(registeredType).create();
+    }
 }

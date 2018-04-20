@@ -13,7 +13,7 @@ final class ThreadContext<T extends RecyclableObject> {
     private final int type;
     private final Queue<T> freeObjects;
     private final TypeContext<T> typeContext;
-    private final RecycledFactory<T> factory;
+    private final RecyclableObjectFactory<T> factory;
 
     ThreadContext(TypeContext<T> typeContext) {
         this.typeContext = typeContext;
@@ -29,16 +29,6 @@ final class ThreadContext<T extends RecyclableObject> {
     }
 
     T get() {
-        T object = freeObjects.poll();
-
-        if (object == null) {
-            object = typeContext.tryGetFreeObject();
-        }
-
-        return object;
-    }
-
-    T getOrCreate() {
         T object = freeObjects.poll();
 
         if (object == null) {

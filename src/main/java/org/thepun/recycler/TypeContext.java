@@ -7,9 +7,9 @@ final class TypeContext<T extends RecyclableObject> {
 
     private final int index;
     private final Queue<T> freeObjects;
-    private final RecycledFactory<T> factory;
+    private final RecyclableObjectFactory<T> factory;
 
-    TypeContext(int index, RecycledFactory<T> factory) {
+    TypeContext(int index, RecyclableObjectFactory<T> factory) {
         this.index = index;
         this.factory = factory;
 
@@ -20,7 +20,7 @@ final class TypeContext<T extends RecyclableObject> {
         return index;
     }
 
-    RecycledFactory<T> getFactory() {
+    RecyclableObjectFactory<T> getFactory() {
         return factory;
     }
 

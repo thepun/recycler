@@ -1,6 +1,7 @@
 package org.thepun.recycler;
 
 import java.lang.ref.WeakReference;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -14,7 +15,15 @@ public class RecycleAwareThread extends Thread {
 
     private static int TYPES = 0;
 
-    synchronized static <T extends RecyclableObject> TypeContext<T> registerNewType(RecycledFactory<T> factory) {
+    synchronized static <T extends RecyclableObject> TypeContext<T> registerNewType(Class<T> type, RecyclableObjectFactory<T> factory) {
+        if (!Modifier.isFinal(type.getModifiers())) {
+            throw new IllegalArgumentException("Only final classes supported");
+        }
+
+        if (type.getSuperclass() != RecyclableObject.class) {
+            throw new IllegalArgumentException("Only direct children of RecyclableObject supported");
+        }
+
         int newType = TYPES++;
         if (newType >= MAX_TYPES) {
             throw new IllegalStateException("Maximum amount of recyclable types reached");
@@ -49,6 +58,12 @@ public class RecycleAwareThread extends Thread {
     private final ThreadContext<?>[] contexts;
 
     public RecycleAwareThread() {
+        this(null);
+    }
+
+    public RecycleAwareThread(Runnable r) {
+        super(r);
+
         // global lock
         synchronized (RecycleAwareThread.class) {
             // fill contexts with default values
@@ -65,5 +80,4 @@ public class RecycleAwareThread extends Thread {
     final <T extends RecyclableObject> ThreadContext<T> getContext(int type) {
         return (ThreadContext<T>) contexts[type];
     }
-
 }
