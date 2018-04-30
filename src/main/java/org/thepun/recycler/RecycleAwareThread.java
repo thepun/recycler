@@ -5,12 +5,14 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import static org.thepun.recycler.TypeContext.GLOBAL_LOCK;
+
 public class RecycleAwareThread extends Thread {
 
     private static final List<WeakReference<RecycleAwareThread>> ALL_THREADS = new ArrayList<>(Runtime.getRuntime().availableProcessors() * 2);
 
     static void registerNewTypeToAll(TypeContext typeContext) {
-        synchronized (ALL_THREADS) {
+        synchronized (GLOBAL_LOCK) {
             // add new type to all threads
             Iterator<WeakReference<RecycleAwareThread>> iterator = ALL_THREADS.iterator();
             while (iterator.hasNext()) {
@@ -42,10 +44,12 @@ public class RecycleAwareThread extends Thread {
         super(r);
 
         // global lock
-        synchronized (ALL_THREADS) {
+        synchronized (GLOBAL_LOCK) {
+            int currentlyRegisteredTypes = TypeContext.getCurrentlyRegisteredTypes();
+
             // fill contexts with default values
-            contexts = new ThreadContext[TypeContext.getMaxPossibleRegisteredType()];
-            for (int i = 0; i < contexts.length; i++) {
+            contexts = new ThreadContext[TypeContext.getMaxPossibleRegisteredTypes()];
+            for (int i = 0; i < currentlyRegisteredTypes; i++) {
                 contexts[i] = new ThreadContext(TypeContext.get(i));
             }
 
