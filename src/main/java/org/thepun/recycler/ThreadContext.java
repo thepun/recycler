@@ -6,8 +6,9 @@ import sun.misc.Contended;
 
 final class ThreadContext {
 
-    private static final int MAX_LOCAL_FREE = 256;
-    private static final int MAX_OTHER_FREE = 1024;
+    private static final int GLOBAL_MISS_SHIFT = 256;
+    private static final int MAX_LOCAL_FREE = 16;
+    private static final int MAX_OTHER_FREE = 256;
     private static final int MAX_OTHER_FREE_MASK = MAX_OTHER_FREE - 1;
     private static final long FREE_OTHER_WRITERS_FIELD_OFFSET = ObjectMemory.fieldOffset(ThreadContext.class, "freeOtherWriters");
 
@@ -19,6 +20,10 @@ final class ThreadContext {
 
     @Contended("local")
     private int freeLocalCount;
+    @Contended("local")
+    private int globalReaderCursor;
+    @Contended("local")
+    private int globalWriterCursor;
 
     @Contended("reader")
     private long freeOtherReader;
@@ -63,9 +68,12 @@ final class ThreadContext {
             }
         }
 
-        RecyclableObject object = typeContext.tryGetFreeGlobalObject();
+        RecyclableObject object = typeContext.tryGetFreeGlobalObject(globalReaderCursor);
         if (object == null) {
             object = factory.createNew(registeredType);
+            globalReaderCursor += GLOBAL_MISS_SHIFT;
+        } else {
+            globalReaderCursor = object.getLastGlobalCursor();
         }
 
         return object;
@@ -85,7 +93,7 @@ final class ThreadContext {
             }
         }
 
-        typeContext.addFreeObjectForGlobalUse(object);
+        globalWriterCursor = typeContext.addFreeObjectForGlobalUse(globalWriterCursor, object);
     }
 
     void addFreeObjectForLocalUse(RecyclableObject object) {
@@ -95,7 +103,7 @@ final class ThreadContext {
             freeLocal[localFreeLocalCount] = object;
             freeLocalCount = localFreeLocalCount;
         } else {
-            typeContext.addFreeObjectForGlobalUse(object);
+            globalWriterCursor = typeContext.addFreeObjectForGlobalUse(globalWriterCursor, object);
         }
     }
 }

@@ -4,6 +4,7 @@ public abstract class RecyclableObject {
 
     private final int type;
 
+    private int lastGlobalCursor;
     private RecycleAwareThread origin;
 
     public RecyclableObject(int type) {
@@ -22,12 +23,6 @@ public abstract class RecyclableObject {
         RecycleAwareThread.current().getContext(type).addFreeObjectForLocalUse(this);
     }
 
-    public final void recycleGlobal() {
-        markFreed();
-
-        TypeContext.get(type).addFreeObjectForGlobalUse(this);
-    }
-
     RecycleAwareThread markFreed() {
         RecycleAwareThread originLocal = origin;
         origin = null;
@@ -41,5 +36,13 @@ public abstract class RecyclableObject {
 
     void markUsed(RecycleAwareThread thread) {
         origin = thread;
+    }
+
+    int getLastGlobalCursor() {
+        return lastGlobalCursor;
+    }
+
+    void setLastGlobalCursor(int lastGlobalCursor) {
+        this.lastGlobalCursor = lastGlobalCursor;
     }
 }
