@@ -11,7 +11,7 @@ public abstract class RecyclableObject {
         this.type = type;
     }
 
-    public final void recycle() {
+    public final void recycleBack() {
         RecycleAwareThread thread = markFreed();
 
         RecycleAwareThread current = RecycleAwareThread.current();
@@ -20,12 +20,6 @@ public abstract class RecyclableObject {
         } else {
             thread.getContext(type).addFreeObjectBackToOrigin(this);
         }
-    }
-
-    public final void recycleBack() {
-        RecycleAwareThread thread = markFreed();
-
-        thread.getContext(type).addFreeObjectBackToOrigin(this);
     }
 
     public final void recycleLocal() {
