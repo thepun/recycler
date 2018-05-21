@@ -2,13 +2,12 @@ package org.thepun.recycler;
 
 import io.github.thepun.unsafe.ArrayMemory;
 
-// TODO: implement more predictable latency
+// TODO: add padding for more predictable latency
 final class TypeContext {
 
-    static final Object GLOBAL_LOCK = new Object();
-
-    private static final int MAX_TYPES = 16;
-    private static final int MAX_FREE = 1024;
+    private static final int MAX_TYPES = PropUtil.getPositiveInt("org.thepun.recycler.maxTypes", 32);
+    private static final int MAX_FREE = PropUtil.getPositiveInt("org.thepun.recycler.maxGlobalFree", 1024 * 32);
+    private static final int MISS_JUMP = PropUtil.getPositiveInt("org.thepun.recycler.globalMissJump", 1024 * 32);
     private static final int MAX_FREE_MASK = MAX_FREE - 1;
     private static final TypeContext[] TYPE_CONTEXTS = new TypeContext[MAX_TYPES];
 
@@ -27,7 +26,8 @@ final class TypeContext {
     }
 
     static TypeContext registerNewType(RecyclableObjectFactory<?> factory) {
-        synchronized (GLOBAL_LOCK) {
+        Recycler.GLOBAL_LOCK.lock();
+        try {
             int newRegisteredType = TYPES++;
             if (newRegisteredType >= MAX_TYPES) {
                 throw new IllegalStateException("Maximum amount of recyclable types reached");
@@ -36,6 +36,8 @@ final class TypeContext {
             TypeContext typeContext = new TypeContext(newRegisteredType, factory);
             TYPE_CONTEXTS[newRegisteredType] = typeContext;
             return typeContext;
+        } finally {
+            Recycler.GLOBAL_LOCK.unlock();
         }
     }
 
@@ -72,13 +74,13 @@ final class TypeContext {
                     object.setLastGlobalCursor(cursor);
                     return object;
                 } else {
-                    cursor += 16;
+                    cursor += MISS_JUMP;
                     continue;
                 }
             }
 
             cursor++;
-            if (cursor > maxCursor) {
+            if (cursor >= maxCursor) {
                 return null;
             }
         }
@@ -96,13 +98,13 @@ final class TypeContext {
                 if (ArrayMemory.compareAndSwapObject(free, cursor, null, object)) {
                     return cursor;
                 } else {
-                    cursor += 16;
+                    cursor += MISS_JUMP;
                     continue;
                 }
             }
 
             cursor++;
-            if (cursor > maxCursor) {
+            if (cursor >= maxCursor) {
                 return cursor;
             }
         }

@@ -1,8 +1,11 @@
 package org.thepun.recycler;
 
 import java.lang.reflect.Modifier;
+import java.util.concurrent.locks.ReentrantLock;
 
 public final class Recycler {
+
+    static final ReentrantLock GLOBAL_LOCK = new ReentrantLock();
 
     public static <T  extends RecyclableObject> int registerType(Class<T> type, RecyclableObjectFactory<T> factory) {
         if (!Modifier.isFinal(type.getModifiers())) {
@@ -14,7 +17,7 @@ public final class Recycler {
         }
 
         TypeContext typeContext = TypeContext.registerNewType(factory);
-        RecycleAwareThread.registerNewTypeToAll(typeContext);
+        ThreadContext.registerNewTypeToAll(typeContext);
         return typeContext.getIndex();
     }
 

@@ -15,7 +15,7 @@ abstract class AbstractRecyclerTest {
 
     @BeforeAll
     static void registerType() {
-        executor = Executors.newSingleThreadExecutor(RecycleAwareThread::new);
+        executor = Executors.newSingleThreadExecutor(RecycleAwareThreadImpl::new);
         type = Recycler.registerType(TestRecyclableObject.class, TestRecyclableObject::new);
     }
 

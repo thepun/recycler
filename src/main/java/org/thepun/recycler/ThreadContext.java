@@ -4,13 +4,67 @@ import io.github.thepun.unsafe.MemoryFence;
 import io.github.thepun.unsafe.ObjectMemory;
 import sun.misc.Contended;
 
-final class ThreadContext {
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
-    private static final int GLOBAL_MISS_SHIFT = 256;
-    private static final int MAX_LOCAL_FREE = 16;
-    private static final int MAX_OTHER_FREE = 256;
+import static org.thepun.recycler.Recycler.GLOBAL_LOCK;
+
+public final class ThreadContext {
+
+    private static final List<WeakReference<RecycleAwareThread>> ALL_THREADS = new ArrayList<>(Runtime.getRuntime().availableProcessors() * 2);
+
+    private static final int GLOBAL_SPACE_OFFSET = PropUtil.getPositiveInt("org.thepun.recycler.globalSpaceOffset", 256);
+    private static final int MAX_LOCAL_FREE = PropUtil.getPositiveInt("org.thepun.recycler.maxLocalFree", 16);
+    private static final int MAX_OTHER_FREE = PropUtil.getPositiveInt("org.thepun.recycler.maxOtherFree", 1024);
     private static final int MAX_OTHER_FREE_MASK = MAX_OTHER_FREE - 1;
     private static final long FREE_OTHER_WRITERS_FIELD_OFFSET = ObjectMemory.fieldOffset(ThreadContext.class, "freeOtherWriters");
+
+    static void registerNewTypeToAll(TypeContext typeContext) {
+        GLOBAL_LOCK.lock();
+        try {
+            // add new type to all threads
+            Iterator<WeakReference<RecycleAwareThread>> iterator = ALL_THREADS.iterator();
+            while (iterator.hasNext()) {
+                WeakReference<RecycleAwareThread> ref = iterator.next();
+
+                RecycleAwareThread thread = ref.get();
+                if (thread == null) {
+                    iterator.remove();
+                    continue;
+                }
+
+                thread.setContext(typeContext.getIndex(), new ThreadContext(typeContext));
+            }
+
+            MemoryFence.full();
+        } finally {
+            GLOBAL_LOCK.unlock();
+        }
+    }
+
+    static void registerThread(RecycleAwareThread recycleAwareThread) {
+        GLOBAL_LOCK.lock();
+        try {
+            int currentlyRegisteredTypes = TypeContext.getCurrentlyRegisteredTypes();
+
+            // fill contexts with default values
+            ThreadContext[] newContexts = new ThreadContext[TypeContext.getMaxPossibleRegisteredTypes()];
+            for (int i = 0; i < currentlyRegisteredTypes; i++) {
+                newContexts[i] = new ThreadContext(TypeContext.get(i));
+            }
+            recycleAwareThread.initContexts(newContexts);
+
+            // add self to list of all threads
+            ALL_THREADS.add(new WeakReference<>(recycleAwareThread));
+
+            MemoryFence.full();
+        } finally {
+            GLOBAL_LOCK.unlock();
+        }
+    }
+
 
     private final int registeredType;
     private final TypeContext typeContext;
@@ -53,6 +107,7 @@ final class ThreadContext {
             return object;
         }
 
+        // TODO: implement local buffer fulfill from others array
         MemoryFence.load(); // do not reorder these operations before local objects check because it will require separate cache line load
         long localFreeOtherReader = freeOtherReader;
         long localFreeOtherWriters = freeOtherWriters;
@@ -71,7 +126,7 @@ final class ThreadContext {
         RecyclableObject object = typeContext.tryGetFreeGlobalObject(globalReaderCursor);
         if (object == null) {
             object = factory.createNew(registeredType);
-            globalReaderCursor += GLOBAL_MISS_SHIFT;
+            globalReaderCursor += GLOBAL_SPACE_OFFSET;
         } else {
             globalReaderCursor = object.getLastGlobalCursor();
         }
