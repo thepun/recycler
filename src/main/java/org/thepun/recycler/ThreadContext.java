@@ -143,8 +143,6 @@ public final class ThreadContext {
     }
 
     void addFreeObjectBackToOrigin(RecyclableObject object) {
-        MemoryFence.store(); // ensure we stored everything before putting the object back
-
         long localFreeOtherReader = freeOtherReader;
         long localFreeOtherWriters = freeOtherWriters;
         if (localFreeOtherWriters < localFreeOtherReader + MAX_OTHER_FREE) {
