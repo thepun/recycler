@@ -96,7 +96,9 @@ public final class ThreadContext {
     }
 
     RecyclableObject create() {
-        return factory.createNew(registeredType);
+        RecyclableObject object = factory.createNew(registeredType);
+        object.markUsed(this);
+        return object;
     }
 
     RecyclableObject get() {
@@ -104,6 +106,7 @@ public final class ThreadContext {
             int freeIndex = --freeLocalCount;
             RecyclableObject object = freeLocal[freeIndex];
             freeLocal[freeIndex] = null;
+            object.markUsed(this);
             return object;
         }
 
@@ -119,6 +122,7 @@ public final class ThreadContext {
                 localFreeOtherReader++;
                 MemoryFence.store(); // do not reorder index increase before clear
                 freeOtherReader = localFreeOtherReader;
+                object.markUsed(this);
                 return object;
             }
         }
@@ -131,6 +135,7 @@ public final class ThreadContext {
             globalReaderCursor = object.getLastGlobalCursor();
         }
 
+        object.markUsed(this);
         return object;
     }
 
@@ -154,8 +159,8 @@ public final class ThreadContext {
     void addFreeObjectForLocalUse(RecyclableObject object) {
         int localFreeLocalCount = freeLocalCount;
         if (localFreeLocalCount < MAX_LOCAL_FREE) {
-            localFreeLocalCount++;
             freeLocal[localFreeLocalCount] = object;
+            localFreeLocalCount++;
             freeLocalCount = localFreeLocalCount;
         } else {
             globalWriterCursor = typeContext.addFreeObjectForGlobalUse(globalWriterCursor, object);

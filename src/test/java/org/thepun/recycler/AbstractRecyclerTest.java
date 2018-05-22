@@ -11,11 +11,13 @@ import static org.junit.jupiter.api.Assertions.fail;
 abstract class AbstractRecyclerTest {
 
     private static int type;
-    private static ExecutorService executor;
+    private static ExecutorService executor1;
+    private static ExecutorService executor2;
 
     @BeforeAll
     static void registerType() {
-        executor = Executors.newSingleThreadExecutor(RecycleAwareThreadImpl::new);
+        executor1 = Executors.newSingleThreadExecutor(RecycleAwareThreadImpl::new);
+        executor2 = Executors.newSingleThreadExecutor(RecycleAwareThreadImpl::new);
         type = Recycler.registerType(TestRecyclableObject.class, TestRecyclableObject::new);
     }
 
@@ -23,9 +25,35 @@ abstract class AbstractRecyclerTest {
         return type;
     }
 
-    protected <T> T executeInRecycleAwareThread(Callable<T> callable) {
+    protected void executeInRecyclerThread1(Runnable runnable) {
         try {
-            return executor.submit(callable).get();
+            executor1.submit(runnable).get();
+        } catch (Exception e) {
+            fail(e);
+        }
+    }
+
+    protected <T> T executeInRecyclerThread1(Callable<T> callable) {
+        try {
+            return executor1.submit(callable).get();
+        } catch (Exception e) {
+            fail(e);
+        }
+
+        return null;
+    }
+
+    protected void executeInRecyclerThread2(Runnable runnable) {
+        try {
+            executor2.submit(runnable).get();
+        } catch (Exception e) {
+            fail(e);
+        }
+    }
+
+    protected <T> T executeInRecyclerThread2(Callable<T> callable) {
+        try {
+            return executor2.submit(callable).get();
         } catch (Exception e) {
             fail(e);
         }
