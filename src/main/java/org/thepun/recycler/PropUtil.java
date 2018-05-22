@@ -16,4 +16,9 @@ final class PropUtil {
         return i;
     }
 
+    static int getPositiveIntPowOf2(String name, int defaultValue) {
+        int value = getPositiveInt(name, defaultValue);
+        return 1 << (32 - Integer.numberOfLeadingZeros(value - 1));
+    }
+
 }

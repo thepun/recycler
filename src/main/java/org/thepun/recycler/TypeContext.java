@@ -5,9 +5,9 @@ import io.github.thepun.unsafe.ArrayMemory;
 // TODO: add padding for more predictable latency
 final class TypeContext {
 
-    private static final int MAX_TYPES = PropUtil.getPositiveInt("org.thepun.recycler.maxTypes", 32);
-    private static final int MAX_FREE = PropUtil.getPositiveInt("org.thepun.recycler.maxGlobalFree", 1024 * 32);
-    private static final int MISS_JUMP = PropUtil.getPositiveInt("org.thepun.recycler.globalMissJump", 1024 * 32);
+    private static final int MAX_TYPES = PropUtil.getPositiveIntPowOf2("org.thepun.recycler.maxTypes", 32);
+    private static final int MAX_FREE = PropUtil.getPositiveIntPowOf2("org.thepun.recycler.maxGlobalFree", 1024 * 32);
+    private static final int MISS_JUMP = PropUtil.getPositiveIntPowOf2("org.thepun.recycler.globalMissJump", 1024 * 32);
     private static final int MAX_FREE_MASK = MAX_FREE - 1;
     private static final TypeContext[] TYPE_CONTEXTS = new TypeContext[MAX_TYPES];
 
@@ -68,9 +68,10 @@ final class TypeContext {
 
         RecyclableObject object;
         for (;;) {
-            object = free[cursor & MAX_FREE_MASK];
+            int index = cursor & MAX_FREE_MASK;
+            object = free[index];
             if (object != null) {
-                if (ArrayMemory.compareAndSwapObject(free, cursor, object, null)) {
+                if (ArrayMemory.compareAndSwapObject(free, index, object, null)) {
                     object.setLastGlobalCursor(cursor);
                     return object;
                 } else {
@@ -93,9 +94,10 @@ final class TypeContext {
 
         RecyclableObject place;
         for (;;) {
-            place = free[cursor & MAX_FREE_MASK];
+            int index = cursor & MAX_FREE_MASK;
+            place = free[index];
             if (place == null) {
-                if (ArrayMemory.compareAndSwapObject(free, cursor, null, object)) {
+                if (ArrayMemory.compareAndSwapObject(free, index, null, object)) {
                     return cursor;
                 } else {
                     cursor += MISS_JUMP;

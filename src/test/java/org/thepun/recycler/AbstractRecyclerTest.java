@@ -25,6 +25,10 @@ abstract class AbstractRecyclerTest {
         return type;
     }
 
+    protected void asyncInRecyclerThread1(Runnable runnable) {
+        executor1.submit(runnable);
+    }
+
     protected void executeInRecyclerThread1(Runnable runnable) {
         try {
             executor1.submit(runnable).get();
@@ -41,6 +45,10 @@ abstract class AbstractRecyclerTest {
         }
 
         return null;
+    }
+
+    protected void asyncInRecyclerThread2(Runnable runnable) {
+        executor2.submit(runnable);
     }
 
     protected void executeInRecyclerThread2(Runnable runnable) {

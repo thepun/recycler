@@ -15,9 +15,9 @@ public final class ThreadContext {
 
     private static final List<WeakReference<RecycleAwareThread>> ALL_THREADS = new ArrayList<>(Runtime.getRuntime().availableProcessors() * 2);
 
-    private static final int GLOBAL_SPACE_OFFSET = PropUtil.getPositiveInt("org.thepun.recycler.globalSpaceOffset", 256);
-    private static final int MAX_LOCAL_FREE = PropUtil.getPositiveInt("org.thepun.recycler.maxLocalFree", 16);
-    private static final int MAX_OTHER_FREE = PropUtil.getPositiveInt("org.thepun.recycler.maxOtherFree", 1024);
+    private static final int GLOBAL_SPACE_OFFSET = PropUtil.getPositiveIntPowOf2("org.thepun.recycler.globalSpaceOffset", 256);
+    private static final int MAX_LOCAL_FREE = PropUtil.getPositiveIntPowOf2("org.thepun.recycler.maxLocalFree", 16);
+    private static final int MAX_OTHER_FREE = PropUtil.getPositiveIntPowOf2("org.thepun.recycler.maxOtherFree", 1024);
     private static final int MAX_OTHER_FREE_MASK = MAX_OTHER_FREE - 1;
     private static final long FREE_OTHER_WRITERS_FIELD_OFFSET = ObjectMemory.fieldOffset(ThreadContext.class, "freeOtherWriters");
 
@@ -104,24 +104,27 @@ public final class ThreadContext {
     RecyclableObject get() {
         if (freeLocalCount > 0) {
             int freeIndex = --freeLocalCount;
-            RecyclableObject object = freeLocal[freeIndex];
-            freeLocal[freeIndex] = null;
+            RecyclableObject[] freeLocalVar = freeLocal;
+            RecyclableObject object = freeLocalVar[freeIndex];
+            freeLocalVar[freeIndex] = null;
             object.markUsed(this);
             return object;
         }
 
         // TODO: implement local buffer fulfill from others array
         MemoryFence.load(); // do not reorder these operations before local objects check because it will require separate cache line load
-        long localFreeOtherReader = freeOtherReader;
-        long localFreeOtherWriters = freeOtherWriters;
-        if (localFreeOtherWriters > localFreeOtherReader) {
-            int index = (int) (localFreeOtherReader & MAX_OTHER_FREE_MASK);
-            RecyclableObject object = freeOther[index];
+        long freeOtherReaderVar = freeOtherReader;
+        long freeOtherWritersVar = freeOtherWriters;
+        if (freeOtherWritersVar > freeOtherReaderVar) {
+            RecyclableObject[] freeOtherVar = freeOther;
+
+            int index = (int) (freeOtherReaderVar & MAX_OTHER_FREE_MASK);
+            RecyclableObject object = freeOtherVar[index];
             if (object != null) { // other thread finished writing to the cell
-                freeOther[index] = null;
-                localFreeOtherReader++;
+                freeOtherVar[index] = null;
+                freeOtherReaderVar++;
                 MemoryFence.store(); // do not reorder index increase before clear
-                freeOtherReader = localFreeOtherReader;
+                freeOtherReader = freeOtherReaderVar;
                 object.markUsed(this);
                 return object;
             }
