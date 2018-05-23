@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.thepun.recycler;
+package io.github.thepun.recycler;
 
 import io.github.thepun.unsafe.MemoryFence;
 import io.github.thepun.unsafe.ObjectMemory;
@@ -23,8 +23,6 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
-import static org.thepun.recycler.Recycler.GLOBAL_LOCK;
 
 public final class ThreadContext {
 
@@ -37,7 +35,7 @@ public final class ThreadContext {
     private static final long FREE_OTHER_WRITERS_FIELD_OFFSET = ObjectMemory.fieldOffset(ThreadContext.class, "freeOtherWriters");
 
     static void registerNewTypeToAll(TypeContext typeContext) {
-        GLOBAL_LOCK.lock();
+        Recycler.GLOBAL_LOCK.lock();
         try {
             // add new type to all threads
             Iterator<WeakReference<RecycleAwareThread>> iterator = ALL_THREADS.iterator();
@@ -55,12 +53,12 @@ public final class ThreadContext {
 
             MemoryFence.full();
         } finally {
-            GLOBAL_LOCK.unlock();
+            Recycler.GLOBAL_LOCK.unlock();
         }
     }
 
     static void registerThread(RecycleAwareThread recycleAwareThread) {
-        GLOBAL_LOCK.lock();
+        Recycler.GLOBAL_LOCK.lock();
         try {
             int currentlyRegisteredTypes = TypeContext.getCurrentlyRegisteredTypes();
 
@@ -76,7 +74,7 @@ public final class ThreadContext {
 
             MemoryFence.full();
         } finally {
-            GLOBAL_LOCK.unlock();
+            Recycler.GLOBAL_LOCK.unlock();
         }
     }
 

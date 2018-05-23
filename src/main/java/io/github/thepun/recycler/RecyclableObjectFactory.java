@@ -13,23 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.thepun.recycler;
+package io.github.thepun.recycler;
 
-public interface RecycleAwareThread {
+public interface RecyclableObjectFactory<T extends RecyclableObject> {
 
-    static RecycleAwareThread current() {
-        return (RecycleAwareThread) Thread.currentThread();
-    }
-
-    static void register(RecycleAwareThread recycleAwareThread) {
-        ThreadContext.registerThread(recycleAwareThread);
-    }
-
-
-    ThreadContext getContext(int type);
-
-    void setContext(int type, ThreadContext threadContext);
-
-    void initContexts(ThreadContext[] threadContexts);
+    T createNew(int type);
 
 }

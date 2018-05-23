@@ -13,27 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.thepun.recycler;
+package io.github.thepun.recycler;
 
-final class PropUtil {
+public interface RecycleAwareThread {
 
-    static int getPositiveInt(String name, int defaultValue) {
-        String property = System.getProperty(name);
-        if (property == null) {
-            return defaultValue;
-        }
-
-        int i = Integer.parseInt(property);
-        if (i <= 0) {
-            throw new IllegalStateException("Property '" + name + "' is not positive integer: " + i);
-        }
-
-        return i;
+    static RecycleAwareThread current() {
+        return (RecycleAwareThread) Thread.currentThread();
     }
 
-    static int getPositiveIntPowOf2(String name, int defaultValue) {
-        int value = getPositiveInt(name, defaultValue);
-        return 1 << (32 - Integer.numberOfLeadingZeros(value - 1));
+    static void register(RecycleAwareThread recycleAwareThread) {
+        ThreadContext.registerThread(recycleAwareThread);
     }
+
+
+    ThreadContext getContext(int type);
+
+    void setContext(int type, ThreadContext threadContext);
+
+    void initContexts(ThreadContext[] threadContexts);
 
 }

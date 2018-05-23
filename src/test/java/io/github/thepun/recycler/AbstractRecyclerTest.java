@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.thepun.recycler;
+package io.github.thepun.recycler;
 
 import org.junit.jupiter.api.BeforeAll;
 

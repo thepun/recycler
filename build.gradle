@@ -2,11 +2,10 @@ plugins {
     id "com.github.hierynomus.license" version"0.14.0"
 }
 
-group 'org.thepun'
-version '1.0-SNAPSHOT'
+group 'io.github.thepun'
+version '1.0'
 
 apply plugin: 'java'
-apply plugin: 'maven'
 apply from: 'ide.gradle'
 apply from: 'publish.gradle'
 

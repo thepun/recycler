@@ -13,26 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.thepun.recycler;
+package io.github.thepun.recycler;
 
-import java.util.concurrent.atomic.LongAdder;
+final class PropUtil {
 
-final class TestRecyclableObject extends RecyclableObject {
+    static int getPositiveInt(String name, int defaultValue) {
+        String property = System.getProperty(name);
+        if (property == null) {
+            return defaultValue;
+        }
 
-    private static final LongAdder created = new LongAdder();
+        int i = Integer.parseInt(property);
+        if (i <= 0) {
+            throw new IllegalStateException("Property '" + name + "' is not positive integer: " + i);
+        }
 
-    public static void clearCounter() {
-        created.reset();
+        return i;
     }
 
-    public static long getCounter() {
-        return created.longValue();
+    static int getPositiveIntPowOf2(String name, int defaultValue) {
+        int value = getPositiveInt(name, defaultValue);
+        return 1 << (32 - Integer.numberOfLeadingZeros(value - 1));
     }
 
-
-    TestRecyclableObject(int type) {
-        super(type);
-
-        created.add(1);
-    }
 }

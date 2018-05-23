@@ -13,10 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.thepun.recycler;
+package io.github.thepun.recycler;
 
-public interface RecyclableObjectFactory<T extends RecyclableObject> {
+import java.util.concurrent.atomic.LongAdder;
 
-    T createNew(int type);
+final class TestRecyclableObject extends RecyclableObject {
 
+    private static final LongAdder created = new LongAdder();
+
+    public static void clearCounter() {
+        created.reset();
+    }
+
+    public static long getCounter() {
+        return created.longValue();
+    }
+
+
+    TestRecyclableObject(int type) {
+        super(type);
+
+        created.add(1);
+    }
 }
