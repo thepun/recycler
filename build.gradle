@@ -1,11 +1,17 @@
+plugins {
+    id "com.github.hierynomus.license" version"0.14.0"
+}
+
 group 'org.thepun'
 version '1.0-SNAPSHOT'
 
-apply plugin: 'idea'
 apply plugin: 'java'
 apply plugin: 'maven'
+apply from: 'ide.gradle'
+apply from: 'publish.gradle'
 
 sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 repositories {
     mavenCentral()
@@ -16,17 +22,6 @@ dependencies {
     testCompile 'org.junit.jupiter:junit-jupiter-api:5.1.0'
     testCompile 'org.junit.jupiter:junit-jupiter-params:5.1.0'
     testCompile 'org.mockito:mockito-core:2.12.0'
-}
-
-idea {
-    module {
-        jdkName = '1.8'
-        downloadJavadoc = true
-        downloadSources = true
-        outputDir = file('build/idea')
-        testOutputDir = file('build/idea_test')
-        excludeDirs += file('.idea')
-    }
 }
 
 test {
